@@ -14,4 +14,12 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Data\Services\" />
+    <Folder Include="Data\Repository\IRepository\" />
+    <Folder Include="Data\ViewModels\" />
+    <Folder Include="Data\Services\Extensions\" />
+    <Folder Include="wwwroot\js\" />
+  </ItemGroup>
+
 </Project>

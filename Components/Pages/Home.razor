@@ -1,7 +1,11 @@
 ﻿@page "/"
 @using System.Globalization
+@inject AuthenticationStateProvider _authenticationStateProvider
+@inject IJSRuntime _JS
+@inject NavigationManager _navigationManager
 @inject IProductRepository _productRepository
 @inject ICategoryRepository _categoryRepository
+@inject IShoppingCartRepository _shopingCartRepository
 
 <PageTitle>Home</PageTitle>
 
@@ -72,7 +76,9 @@ else
                                 <h5 class="card-title text-center lead text-success">@prod.Name</h5>
                                 <p class="card-text mt-2">@((MarkupString)@prod.Description)</p>
                                 <h4 class="text-center">
-                                    <i class="bi bi-cart3 btn btn-success text-right  px-5 form-control" style="width:300px"> Add to cart</i>
+                                    <div class="m-lg-auto p-2" @onclick="()=>AddOrderItem(prod)">
+                                        <i class="bi bi-cart3 btn btn-success text-right  px-5 form-control" style="width:300px"> Add to cart</i>
+                                    </div>
                                 </h4>
 
 
@@ -143,5 +149,32 @@ else
     private string GetActiveTabClass(int categoryId)
     {
         return categoryId == _selectedCategoryId ? "active" : string.Empty;
+    }
+
+    private async Task AddOrderItem(Product product)
+    {
+        var authState = await _authenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        var isAuthenticated = user.Identity is not null && user.Identity.IsAuthenticated;
+
+        if (!isAuthenticated)
+        {
+            _navigationManager.NavigateTo("/Account/Login", forceLoad: true);
+
+        }
+        else
+        {
+            var result = await _shopingCartRepository.UpdateCartAsync(user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value, product.Id, 1);
+
+            if (result)
+            {
+                _JS?.ToastrSuccess("Product added to cart successfully");
+            }
+            else
+            {
+                _JS?.ToastrError("Error encountered");
+            }
+            
+        }
     }
 }

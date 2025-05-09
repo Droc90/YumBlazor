@@ -1,8 +1,11 @@
 ﻿@page "/cart"
 @using Microsoft.AspNetCore.Authorization
 @using System.Globalization
+@using YumBlazor.Utility
 @inject AuthenticationStateProvider _authenticationStateProvider
 @inject IShoppingCartRepository _cartRepository
+@inject IOrderRepository _orderRepository
+@inject NavigationManager _navigationManager
 @attribute [Authorize]
 
 @if (IsProcessing)
@@ -135,6 +138,7 @@ else
 
         OrderHeader.Email = user.FindFirst(u => u.Type.Contains("emailaddress"))?.Value;
         OrderHeader.UserId = user.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value;
+        OrderHeader.Status = SD.StatusPending;
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -170,6 +174,11 @@ else
 
     private async Task ProcessOrderCreation()
     {
+        IsProcessing = true;
+        await Task.Yield();
+        OrderHeader.OrderDetail = SD.ConvertShoppingCartListToOrderDetail(ShoppingCarts.ToList());
         
+        await _orderRepository.CreateAsync(OrderHeader);
+        _navigationManager.NavigateTo($"/order/orderconfirmation/{OrderHeader.Id}");
     }
 }

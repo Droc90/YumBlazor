@@ -7,6 +7,7 @@
 @using Microsoft.AspNetCore.Identity
 @using Microsoft.AspNetCore.WebUtilities
 @using YumBlazor.Data
+@using YumBlazor.Utility
 
 @inject SignInManager<ApplicationUser> SignInManager
 @inject UserManager<ApplicationUser> UserManager
@@ -67,17 +68,21 @@
 
     private string? ProviderDisplayName => externalLoginInfo?.ProviderDisplayName;
 
+    private bool _isProcessingLoginCallback = false;
+
     protected override async Task OnInitializedAsync()
     {
         if (RemoteError is not null)
         {
             RedirectManager.RedirectToWithStatus("Account/Login", $"Error from external provider: {RemoteError}", HttpContext);
+            return;
         }
 
         var info = await SignInManager.GetExternalLoginInfoAsync();
         if (info is null)
         {
             RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
+            return;
         }
 
         externalLoginInfo = info;
@@ -98,35 +103,46 @@
 
     private async Task OnLoginCallbackAsync()
     {
-        if (externalLoginInfo is null)
-        {
-            RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
-        }
+        if (_isProcessingLoginCallback) return;
+        _isProcessingLoginCallback = true;
 
-        // Sign in the user with this external login provider if the user already has a login.
-        var result = await SignInManager.ExternalLoginSignInAsync(
-            externalLoginInfo.LoginProvider,
-            externalLoginInfo.ProviderKey,
-            isPersistent: false,
-            bypassTwoFactor: true);
+        try
+        {
+            if (externalLoginInfo is null)
+            {
+                RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information.", HttpContext);
+                return;
+            }
 
-        if (result.Succeeded)
-        {
-            Logger.LogInformation(
-                "{Name} logged in with {LoginProvider} provider.",
-                externalLoginInfo.Principal.Identity?.Name,
-                externalLoginInfo.LoginProvider);
-            RedirectManager.RedirectTo(ReturnUrl);
-        }
-        else if (result.IsLockedOut)
-        {
-            RedirectManager.RedirectTo("Account/Lockout");
-        }
+            var result = await SignInManager.ExternalLoginSignInAsync(
+                externalLoginInfo.LoginProvider,
+                externalLoginInfo.ProviderKey,
+                isPersistent: false,
+                bypassTwoFactor: true);
 
-        // If the user does not have an account, then ask the user to create an account.
-        if (externalLoginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+            if (result.Succeeded)
+            {
+                Logger.LogInformation(
+                    "{Name} logged in with {LoginProvider} provider.",
+                    externalLoginInfo.Principal.Identity?.Name,
+                    externalLoginInfo.LoginProvider);
+                RedirectManager.RedirectTo(ReturnUrl);
+                return;
+            }
+            else if (result.IsLockedOut)
+            {
+                RedirectManager.RedirectTo("Account/Lockout");
+                return;
+            }
+
+            if (externalLoginInfo.Principal.HasClaim(c => c.Type == ClaimTypes.Email))
+            {
+                Input.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
+            }
+        }
+        finally
         {
-            Input.Email = externalLoginInfo.Principal.FindFirstValue(ClaimTypes.Email) ?? "";
+            _isProcessingLoginCallback = false;
         }
     }
 
@@ -135,6 +151,7 @@
         if (externalLoginInfo is null)
         {
             RedirectManager.RedirectToWithStatus("Account/Login", "Error loading external login information during confirmation.", HttpContext);
+            return;
         }
 
         var emailStore = GetEmailStore();
@@ -149,6 +166,7 @@
             result = await UserManager.AddLoginAsync(user, externalLoginInfo);
             if (result.Succeeded)
             {
+                await UserManager.AddToRoleAsync(user, SD.Role_Customer);
                 Logger.LogInformation("User created an account using {Name} provider.", externalLoginInfo.LoginProvider);
 
                 var userId = await UserManager.GetUserIdAsync(user);
@@ -168,6 +186,7 @@
 
                 await SignInManager.SignInAsync(user, isPersistent: false, externalLoginInfo.LoginProvider);
                 RedirectManager.RedirectTo(ReturnUrl);
+                return;
             }
         }
 

@@ -2,6 +2,7 @@
 @inject SharedStateService _sharedStateService
 @inject AuthenticationStateProvider _authStateProvider
 @inject IShoppingCartRepository _shoppingCartRepository
+@inject PersistentComponentState _persistentComponentState;
 
 <nav class="navbar navbar-expand-md navbar-dark bg-dark pb-4 pt-4">
 	<div class="container-fluid">
@@ -35,9 +36,9 @@
 				<AuthorizeView>
 					<Authorized>
 						<li class="nav-item">
-							<button class="nav-link active me-2" style="cursor: pointer; background: transparent; border: 0px;">
+							<NavLink class="nav-link p-2" href="Account/Manage">
 								Welcome, @context?.User?.Identity?.Name
-							</button>
+							</NavLink>
 						</li>
 						<li class="nav-item">
 							<form action="Account/Logout" method="post" @formname="LogoutForm">
@@ -68,9 +69,11 @@
 </nav>
 
 @code {
+
 	protected override void OnInitialized()
 	{
 		_sharedStateService.OnChange += OnSharedStateChange;
+
 		GetInitialCount();
 	}
 
@@ -81,11 +84,11 @@
 
 	public async Task GetInitialCount()
 	{
-        var authState = await _authStateProvider.GetAuthenticationStateAsync();
+		var authState = await _authStateProvider.GetAuthenticationStateAsync();
 		var user = authState.User;
 
-        _sharedStateService.TotalCartCount = 
-        await _shoppingCartRepository.GetTotalCartCountAsync(user?.FindFirst(u=>u.Type.Contains("nameidentifier"))?.Value);
+		_sharedStateService.TotalCartCount =
+		await _shoppingCartRepository.GetTotalCartCountAsync(user?.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value);
 	}
 
     public void Dispose()

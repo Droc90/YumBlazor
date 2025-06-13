@@ -11,7 +11,7 @@
 			YumBlazor
 		</a>
 		<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse"
-		aria-controls="navbarCollapse" aria-label="Toggle navigation">
+				aria-controls="navbarCollapse" aria-label="Toggle navigation">
 			<span class="navbar-toggler-icon"></span>
 		</button>
 		<div class="collapse navbar-collapse" id="navbarCollapse">
@@ -91,8 +91,8 @@
 		await _shoppingCartRepository.GetTotalCartCountAsync(user?.FindFirst(u => u.Type.Contains("nameidentifier"))?.Value);
 	}
 
-    public void Dispose()
-    {
-        _sharedStateService.OnChange -= OnSharedStateChange;
-    }
+	public void Dispose()
+	{
+		_sharedStateService.OnChange -= OnSharedStateChange;
+	}
 }

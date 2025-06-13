@@ -37,12 +37,12 @@ builder.Services.AddAuthentication(options =>
     })
     .AddMicrosoftAccount(options =>
     {
-        options.ClientId = "efa1d832-5741-491d-91d5-ebf594425f2c";
-        options.ClientSecret = "G2M8Q~HAd7zltOuy9SM2zWksk2Q.oXPv5mXpdaA3";
+        options.ClientId = builder.Configuration["Microsoft:ClientId"];
+        options.ClientSecret = builder.Configuration["Microsoft:ClientSecret"];
     })
     .AddGoogle(options => {
-        options.ClientId = "186638900566-hrllj368ceu0bu45gau8b0mld5bttfs4.apps.googleusercontent.com";
-        options.ClientSecret = "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";
+        options.ClientId = builder.Configuration["Google:ClientId"];
+        options.ClientSecret = builder.Configuration["Google:ClientSecret"];
     })
 
     .AddIdentityCookies();
